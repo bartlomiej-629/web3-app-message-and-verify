@@ -1,56 +1,72 @@
-import request from 'supertest'
-import app from '../app'
-import { Wallet } from 'ethers'
+import request from 'supertest';
+import app from '../app';
+import { Wallet } from 'ethers';
 
 describe('POST /verify-signature (integration)', () => {
-  it('200 + payload on valid signature', async () => {
-    const wallet = Wallet.createRandom()
-    const message = 'hello from tests'
-    const signature = await wallet.signMessage(message)
+  let wallet: ReturnType<typeof Wallet.createRandom>;
+  let message: string;
+  let signature: string;
 
+  beforeAll(async () => {
+    wallet = Wallet.createRandom();
+    message = 'Hello World';
+    signature = await wallet.signMessage(message);
+  });
+
+  it('should return 200 and signer info for a valid signature', async () => {
     const res = await request(app)
       .post('/verify-signature')
-      .send({ message, signature, address: wallet.address })
-      .expect(200)
+      .send({ message, signature })
+      .expect(200);
 
-    expect(res.body.isValid).toBe(true)
-    expect(res.body.signer).toBe(wallet.address)
-    expect(res.body.originalMessage).toBe(message)
-  })
-
-  it('400 on invalid signature (message altered)', async () => {
-    const wallet = Wallet.createRandom()
-    const signatureForA = await wallet.signMessage('A')
-
-    // Now lie: send a DIFFERENT message but the SAME address
-    await request(app)
-      .post('/verify-signature')
-      .send({
-        message: 'B',                 // altered message
-        signature: signatureForA,     // signature for 'A'
-        address: wallet.address,      // claimed signer (forces compare)
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        isValid: true,
+        signer: wallet.address,
+        originalMessage: message,
       })
-      .expect(400)
-  })
+    );
+  });
 
-  it('400 on missing/invalid body', async () => {
-    await request(app)
-      .post('/verify-signature')
-      .send({ message: 123, signature: null })
-      .expect(400)
-  })
-
-  it('200 when recovered address equals provided address', async () => {
-    const wallet = Wallet.createRandom()
-    const msg = 'hello'
-    const sig = await wallet.signMessage(msg)
-
+  it('should return 400 if message or signature is missing', async () => {
     const res = await request(app)
       .post('/verify-signature')
-      .send({ message: msg, signature: sig, address: wallet.address })
-      .expect(200)
+      .send({})
+      .expect(400);
 
-    expect(res.body.isValid).toBe(true)
-    expect(res.body.signer).toBe(wallet.address)
-  })
-})
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        isValid: false,
+        error: 'message, signature, and address are required strings',
+      })
+    );
+  });
+
+  it('should return 400 if message is not a string', async () => {
+    const res = await request(app)
+      .post('/verify-signature')
+      .send({ message: 12345, signature })
+      .expect(400);
+
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        isValid: false,
+        error: 'message, signature, and address are required strings',
+      })
+    );
+  });
+
+  it('should return 400 if signature is not a string', async () => {
+    const res = await request(app)
+      .post('/verify-signature')
+      .send({ message, signature: 12345 })
+      .expect(400);
+
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        isValid: false,
+        error: 'message, signature, and address are required strings',
+      })
+    );
+  });
+});

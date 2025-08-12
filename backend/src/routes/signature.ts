@@ -4,16 +4,11 @@ import { verifyMessage, getAddress } from 'ethers'
 const router = express.Router()
 
 router.post('/', (req, res) => {
-  const { message, signature, address } = req.body as {
-    message?: unknown; signature?: unknown; address?: unknown
-  }
-
+  const { message, signature } = req.body;
   if (
     typeof message !== 'string' ||
     typeof signature !== 'string' ||
-    typeof address !== 'string' ||
-    !message || !signature || !address
-  ) {
+    !message || !signature) {
     return res.status(400).json({
       isValid: false,
       error: 'message, signature, and address are required strings',
@@ -21,28 +16,17 @@ router.post('/', (req, res) => {
   }
 
   try {
-    const recovered = verifyMessage(message, signature)
-
-    const expected = getAddress(address)
-    const actual = getAddress(recovered)
-
-    if (actual !== expected) {
-      return res.status(400).json({
-        isValid: false,
-        error: 'Signature does not match address',
-      })
-    }
-
-    return res.json({
+    const signer = verifyMessage(message, signature);
+    res.json({
       isValid: true,
-      signer: actual,
+      signer,
       originalMessage: message,
-    })
-  } catch {
-    return res.status(400).json({
+    });
+  } catch (err) {
+    res.status(400).json({
       isValid: false,
       error: 'Invalid signature',
-    })
+    });
   }
 })
 

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://web3-app-message-and-verify-2.onrender.com';
+const API_BASE_URL = 'https://web3-app-message-and-verify.onrender.com';
 
 export async function verifySignature(message: string, signature: string) {
   try {

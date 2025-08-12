@@ -4,11 +4,14 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon src/server.ts",
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage"
+  },
+  "engines": {
+    "node": ">=18 <23"
   },
   "keywords": [],
   "author": "",
